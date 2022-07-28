@@ -4,6 +4,8 @@
 #include <time.h>
 #include <stdint.h>
 
+// int using_cpu = 0;
+
 struct perf {
 	int fd[16];
 	uint64_t cycles;

@@ -31,7 +31,7 @@ void genRand()
 
 int main()
 {
-    int cpu_number = 0;
+    int cpu_number = 4;
 
     /* [2] Setaffinity */
     {
@@ -72,26 +72,35 @@ int main()
             genRand();
             x = 0;
             perf_start(&perf);
-            
-            if (a[j])
-                ++x;
-            // if (a[j+1000])
+
+            // if (a[j])
             //     ++x;
             
+            z = 117;
+            
+            // if (x)
+            //     ++y;
+
             perf_stop(&perf, &numbers[j][0]);
         }
-        double mbs = 0;
+        // double cy = 0;
+        // double in = 0;
+        double mi = 0;
+        // double br = 0;
         for (j = 0; j < RAND_SIZE; j++)
         {
-            double cycles = numbers[j][0] * 1.0; // cycles has a base number around 70.0
-            double instructions = numbers[j][1] * 1.0; // instructions has a base number around 36.0
+            // double cycles = numbers[j][0] * 1.0; // cycles has a base number around 70.0
+            // double instructions = numbers[j][1] * 1.0; // instructions has a base number around 36.0
             double missed_branches = numbers[j][2] * 1.0; // missed_branches has a base number around 2.0
-            double branches = numbers[j][3] * 1.0; // branches has a base number around 6.0
+            // double branches = numbers[j][3] * 1.0; // branches has a base number around 6.0
 
-            mbs += missed_branches;
+            // cy += cycles;
+            // in += instructions;
+            mi += missed_branches;
+            // br += branches;
         }
-        
-        printf("%5.3f\n", (mbs / RAND_SIZE) - 2.0);
+        printf("%5.3f\n", mi / RAND_SIZE);
+        // printf("%5.3f  %5.3f  %5.3f  %5.3f\n", cy / RAND_SIZE, in / RAND_SIZE, mi / RAND_SIZE, br / RAND_SIZE);
     }
 
     return 0;
