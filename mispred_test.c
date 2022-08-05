@@ -22,6 +22,8 @@
 #define RAND_SIZE 1000
 int a[ARR_SIZE];
 
+__attribute__((__noinline__)) void *get_pc() { return __builtin_return_address(0); }
+
 void genRand()
 {
     srand(time(NULL));
@@ -31,7 +33,7 @@ void genRand()
 
 int main()
 {
-    int cpu_number = 4;
+    int cpu_number = 7;
 
     /* [2] Setaffinity */
     {
@@ -61,46 +63,64 @@ int main()
     uint64_t x = 0;
     uint64_t y = 0;
     uint64_t z = 0;
-    uint64_t kk = 0;
+    int temp;
+    int kk = 0;
     int j;
-    for (kk = 0; kk < 20; ++kk)
+    void *loop_begin1;
+    void *loop_begin2;
+    int abc;
+
+    loop_begin1 = get_pc();
+    abc = 114; //
+    uint64_t numbers[RAND_SIZE][4] = {{0}};
+    j = 0;
+    loop_begin2 = get_pc();
+    abc = 514; //
+    z = 0;
+    genRand();
+    x = 0;
+    perf_start(&perf);
+
+    z = 111;
+    temp = a[j];
+    if (temp)
+        ++x;
+
+    z = 222;
+
+    if (x)
+        ++y;
+
+    perf_stop(&perf, &numbers[j][0]);
+
+    ++j;
+    if (j < RAND_SIZE)
     {
-        uint64_t numbers[RAND_SIZE][4] = {{0}};
-        for (j = 0; j < RAND_SIZE; j++)
-        {
-            z = 0;
-            genRand();
-            x = 0;
-            perf_start(&perf);
+        abc = 514;
+    }
 
-            // if (a[j])
-            //     ++x;
-            
-            z = 117;
-            
-            // if (x)
-            //     ++y;
+    // double cy = 0;
+    // double in = 0;
+    double mi = 0;
+    // double br = 0;
+    for (j = 0; j < RAND_SIZE; j++)
+    {
+        // double cycles = numbers[j][0] * 1.0; // cycles has a base number around 70.0
+        // double instructions = numbers[j][1] * 1.0; // instructions has a base number around 36.0
+        double missed_branches = numbers[j][2] * 1.0; // missed_branches has a base number around 2.0
+        // double branches = numbers[j][3] * 1.0; // branches has a base number around 6.0
 
-            perf_stop(&perf, &numbers[j][0]);
-        }
-        // double cy = 0;
-        // double in = 0;
-        double mi = 0;
-        // double br = 0;
-        for (j = 0; j < RAND_SIZE; j++)
-        {
-            // double cycles = numbers[j][0] * 1.0; // cycles has a base number around 70.0
-            // double instructions = numbers[j][1] * 1.0; // instructions has a base number around 36.0
-            double missed_branches = numbers[j][2] * 1.0; // missed_branches has a base number around 2.0
-            // double branches = numbers[j][3] * 1.0; // branches has a base number around 6.0
-
-            // cy += cycles;
-            // in += instructions;
-            mi += missed_branches;
-            // br += branches;
-        }
-        printf("%5.3f\n", mi / RAND_SIZE);
-        // printf("%5.3f  %5.3f  %5.3f  %5.3f\n", cy / RAND_SIZE, in / RAND_SIZE, mi / RAND_SIZE, br / RAND_SIZE);
+        // cy += cycles;
+        // in += instructions;
+        mi += missed_branches;
+        // br += branches;
+    }
+    printf("%5.3f\n", mi / RAND_SIZE);
+    // printf("%5.3f  %5.3f  %5.3f  %5.3f\n", cy / RAND_SIZE, in / RAND_SIZE, mi / RAND_SIZE, br / RAND_SIZE);
+    ++kk;
+    if (kk < 20)
+    {
+        abc = 114;
     }
 
     return 0;

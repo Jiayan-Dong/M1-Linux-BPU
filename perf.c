@@ -82,7 +82,7 @@ void perf_open(struct perf *perf)
 			.read_format = PERF_FORMAT_GROUP,
 			.sample_type = PERF_SAMPLE_IDENTIFIER,
 		};
-		perf->fd[i] = perf_event_open(&pe, 0, 4, perf->fd[0], PERF_FLAG_FD_CLOEXEC);
+		perf->fd[i] = perf_event_open(&pe, 0, 3, perf->fd[0], PERF_FLAG_FD_CLOEXEC);
 		if (perf->fd[i] == -1)
 		{
 			fprintf(stderr, "%d\n", i);
