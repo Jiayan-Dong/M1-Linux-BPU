@@ -141,7 +141,7 @@ main:
 	ldr	x1, [x0]
 	str	x1, [sp, 32216]
 	mov	x1, 0
-	mov	w0, 3	// cpu
+	mov	w0, 4	// cpu
 	str	w0, [sp, 32]
 	add	x0, sp, 216
 	movi	v0.4s, 0
@@ -224,7 +224,7 @@ main:
 	str	w0, [sp, 52]
 	ldr	w0, [sp, 52]
 
-	.p2align 21
+	.p2align 2
 	dummy_branches1 0 100 21
 
 	.p2align {rand_b}	
@@ -235,7 +235,7 @@ main:
 	.p2align {rand_t}	
 .L10:
 	nop
-	.p2align 21
+	.p2align 2
 	dummy_branches2 1 {mid_dummy} 21
 
 	.p2align {co_b}	
@@ -429,8 +429,8 @@ for i in range(0, 21):
 	for j in range(2,20):
 		with open("mispred_test.s", "w") as file:
 			# file.write(up + dummy(120, 24) + mid.format(20, i) + down)
-			file.write(up.format(rand_b=j, rand_t=19, mid_dummy=60-i, co_b=21, co_t=19))
-		os.system("gcc -no-pie -g -flto -O3 perf.c mispred_test.s -o mispred_test -pthread")
+			file.write(up.format(rand_b=2, rand_t=j, mid_dummy=100-i, co_b=2, co_t=2))
+		os.system("gcc -Ttext 0x1000000 -no-pie -g -flto -O3 perf.c mispred_test.s -o mispred_test -pthread")
 		p = subprocess.run(shlex.split("./mispred_test"),stdout=subprocess.PIPE)
 		x_min1 = float("inf")
 		for l in p.stdout.split(b'\n'):
@@ -446,8 +446,11 @@ for i in range(0, 21):
 
 import csv
 
-with open("phr_Icestrom_used_rand_target_address_fix.csv", "w") as csvfile:
+csvFilename = "phr_Firestrom_used_rand_target_address_no_branch_align_col_bt2"
+
+with open(csvFilename + ".csv", "w") as csvfile:
 	writer = csv.writer(csvfile)
-	writer.writerow([""] + list(range(0, 21)))
+	writer.writerow([""] + list(range(2, 21)))
 	writer.writerows(bb)
 
+os.system(r'./plot.sh {}.csv "firestrom target" "{}.png" "mispred" "p2align"'.format(csvFilename, csvFilename))

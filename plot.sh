@@ -14,7 +14,7 @@ set key autotitle columnheader
 set key outside
 set key title ARG5
 set tics font ",12"
-set xtics 1
+set xtics 10
 set yrange [0:]
 stats ARG1 nooutput
 print "STATS_columns: ", STATS_columns

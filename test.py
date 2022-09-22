@@ -1,5 +1,20 @@
+import subprocess
+import shlex
+import sys
+import os
+import random
 
+            # z = 111;
 
+            # if (a[j])
+            #     ++x;
+            
+            # z = 222;
+            
+            # if (x)
+            #     ++y;
+
+up = """
 	.arch armv8-a
 	.file	"mispred_test.c"
 	.text
@@ -85,7 +100,7 @@ genRand:
 	.string	"python3 -c 'import math'"
 	.align	3
 .LC2:
-	.string	"%5.3f\n"
+	.string	"%5.3f\\n"
 	.text
 	.align	2
 	.global	main
@@ -96,8 +111,8 @@ genRand:
 	b label1_\iter
 	.p2align \i
 label1_\iter:
-	.if \n-\iter
-		dummy_branches1 %iter+1, \n, \i
+	.if \\n-\iter
+		dummy_branches1 %iter+1, \\n, \i
 	.endif
 .endm
 
@@ -106,17 +121,8 @@ label1_\iter:
 	b label2_\iter
 	.p2align \i
 label2_\iter:
-	.if \n-\iter
-		dummy_branches2 %iter+1, \n, \i
-	.endif
-.endm
-
-.altmacro
-.macro snop n, i
-	nop
-	.p2align \n
-	.if \n-\i
-		snop %n-1, \i
+	.if \\n-\iter
+		dummy_branches2 %iter+1, \\n, \i
 	.endif
 .endm
 
@@ -216,45 +222,29 @@ main:
 	ldrsw	x1, [sp, 28]
 	ldr	w0, [x0, x1, lsl 2]
 	str	w0, [sp, 52]
-	
-
-	mov	w0, 120
-	b .L30
-	.p2align 22
-.L30:
-	sub	w0, w0, 1
-	.p2align 16
-	cbnz w0, .L30
-
-	.p2align 22
-	
 	ldr	w0, [sp, 52]
-	.p2align 16
+
+	.p2align 2
+	dummy_branches1 0 100 21
+
+	.p2align {rand_b}	
 	cbz w0, .L10
 	ldr	x0, [sp, 56]
 	add	x0, x0, 1
 	str	x0, [sp, 56]
-	.p2align 18	
+	.p2align {rand_t}	
 .L10:
+	nop
+	.p2align 2
+	dummy_branches2 1 {mid_dummy} 21
 
-	ldr	w0, [sp, 52]
-	.p2align 16
-	cbz w0, .L20
-	.p2align 19	
-.L20:
-
-	dummy_branches2 1 1 2
-
-	ldr	x0, [sp, 56]
-	.p2align 2	
+	.p2align {co_b}	
 	cbz x0, .L11
 	ldr	x0, [sp, 80]
 	add	x0, x0, 1
 	str	x0, [sp, 80]
-	.p2align 2	
+	.p2align {co_t}	
 .L11:
-	.p2align 8
-	nop
 	add	x1, sp, 216
 	ldrsw	x0, [sp, 28]
 	lsl	x0, x0, 5
@@ -334,5 +324,133 @@ main:
 	.section	.note.GNU-stack,"",@progbits
 
 
+"""
+
+def dummy(n, align=2):
+    bs = ""
+    # bs += ".p2align "+ str(align) + "\n"
+    n += 1
+    for i in range(n):
+        if i < 100:
+            bs += "b LBB3_" + str(i) + "\n"
+            bs += ".p2align "+ str(align) + "\n"
+            bs += "LBB3_" + str(i) + ":\n"
+        elif i < 200:
+            bs += "b LBB4_" + str(i-100) + "\n"
+            bs += ".p2align "+ str(align) + "\n"
+            bs += "LBB4_" + str(i-100) + ":\n"
+        elif i < 300:
+            bs += "b LBB5_" + str(i-200) + "\n"
+            bs += ".p2align "+ str(align) + "\n"
+            bs += "LBB5_" + str(i-200) + ":\n"
+        elif i < 400:
+            bs += "b LBB6_" + str(i-300) + "\n"
+            bs += ".p2align "+ str(align) + "\n"
+            bs += "LBB6_" + str(i-300) + ":\n"
+        else:
+            bs += "b LBB7_" + str(i-400) + "\n"
+            bs += ".p2align "+ str(align) + "\n"
+            bs += "LBB7_" + str(i-400) + ":\n"
+    return bs
+
+def always_taken_branch(n):
+    bs = "mov w8, #0\n"
+    for i in range(n):
+        if i < 100:
+            bs += "cbz w8, LBB3_" + str(i) + "\n"
+            bs += "LBB3_" + str(i) + ":\n"
+        elif i < 200:
+            bs += "cbz w8, LBB4_" + str(i-100) + "\n"
+            bs += "LBB4_" + str(i-100) + ":\n"
+        elif i < 300:
+            bs += "cbz w8, LBB5_" + str(i-200) + "\n"
+            bs += "LBB5_" + str(i-200) + ":\n"
+        elif i < 400:
+            bs += "cbz w8, LBB6_" + str(i-300) + "\n"
+            bs += "LBB6_" + str(i-300) + ":\n"
+        else:
+            bs += "cbz w8, LBB7_" + str(i-400) + "\n"
+            bs += "LBB7_" + str(i-400) + ":\n"
+    return bs
+
+def always_not_taken_branch(n):
+    bs = "mov w8, #1\n"
+    for i in range(n):
+        if i < 100:
+            bs += "cbz w8, LBB3_" + str(i) + "\n"
+            bs += "LBB3_" + str(i) + ":\n"
+        elif i < 200:
+            bs += "cbz w8, LBB4_" + str(i-100) + "\n"
+            bs += "LBB4_" + str(i-100) + ":\n"
+        elif i < 300:
+            bs += "cbz w8, LBB5_" + str(i-200) + "\n"
+            bs += "LBB5_" + str(i-200) + ":\n"
+        elif i < 400:
+            bs += "cbz w8, LBB6_" + str(i-300) + "\n"
+            bs += "LBB6_" + str(i-300) + ":\n"
+        else:
+            bs += "cbz w8, LBB7_" + str(i-400) + "\n"
+            bs += "LBB7_" + str(i-400) + ":\n"
+    return bs
+
+def mixed_branch(n):
+	bs = ""
+	bs = "mov w8, #1\n"
+	bs += "mov w7, #0\n"
+	for i in range(n):
+		r = random.randint(0,2)
+		if i < 100:
+			if r == 0:
+				bs += "cbz w8, LBB3_" + str(i) + "\n"
+				bs += "LBB3_" + str(i) + ":\n"
+			elif r == 1:
+				bs += "b LBB3_" + str(i) + "\n"
+				bs += "LBB3_" + str(i) + ":\n"
+			else:
+				bs += "cbz w7, LBB3_" + str(i) + "\n"
+				bs += "LBB3_" + str(i) + ":\n"
+
+		elif i < 200:
+			if r == 0:
+				bs += "cbz w8, LBB4_" + str(i) + "\n"
+				bs += "LBB4_" + str(i) + ":\n"
+			elif r == 1:
+				bs += "b LBB4_" + str(i) + "\n"
+				bs += "LBB4_" + str(i) + ":\n"
+			else:
+				bs += "cbz w7, LBB4_" + str(i) + "\n"
+				bs += "LBB4_" + str(i) + ":\n"
+	return bs
 
 
+bb = []
+for i in range(99, 100):
+	ll = []
+	for j in range(2,3):
+		with open("mispred_test.s", "w") as file:
+			# file.write(up + dummy(120, 24) + mid.format(20, i) + down)
+			file.write(up.format(rand_b=2, rand_t=j, mid_dummy=100-i, co_b=2, co_t=2))
+		os.system("gcc -Ttext 0x1000000 -no-pie -g -flto -O3 perf.c mispred_test.s -o test -pthread")
+		p = subprocess.run(shlex.split("./test"),stdout=subprocess.PIPE)
+		x_min1 = float("inf")
+		for l in p.stdout.split(b'\n'):
+			if not l:continue
+			x = float(l.decode())
+			x_min1 = min(x_min1, x)
+		ll.append(x_min1)
+
+	# bb.append([i, x_min1])
+	bb.append([i] + ll)
+
+	if i % 1 == 0: print(i, bb[-1])
+
+import csv
+
+csvFilename = "test"
+
+with open(csvFilename + ".csv", "w") as csvfile:
+	writer = csv.writer(csvfile)
+	writer.writerow([""] + list(range(2, 21)))
+	writer.writerows(bb)
+
+#os.system(r'./plot.sh {}.csv "firestrom target" "{}.png" "mispred" "p2align"'.format(csvFilename, csvFilename))

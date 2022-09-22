@@ -91,7 +91,7 @@ int main()
     if (x)
         ++y;
 
-    perf_stop(&perf, &numbers[j][0]);
+    perf_8stop(&perf, &numbers[j][0]);
 
     ++j;
     if (j < RAND_SIZE)
